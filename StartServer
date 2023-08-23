@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Check if the script is run as root
+if [ "$EUID" -ne 0 ]; then
+  echo "Please run as root or with sudo privileges."
+  exit
+fi
+
+# Start the Flask application
+export FLASK_APP=your_app.py
+flask run

@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOVA Panel</title>
+    <style>
+        /* Splash screen styles */
+        #splash-screen {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#background-video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -1; /* Keep it behind other content */
+}
+        #splash-logo {
+            width: 600px; /* Adjust the size as needed */
+            animation: fadeIn 2s ease-in-out;
+            image-rendering: optimizeQuality; /* Suggests the browser to prioritize quality over speed */
+            will-change: transform; /* Indicates that the element will be animated */
+
+        }
+        @keyframes bounceIn {
+    0% {
+        transform: scale(0.1);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+#splash-logo {
+    animation: bounceIn 2s;
+}
+
+        body {
+    font-family: Arial, sans-serif;
+    background-color: #000;
+    color: #fff;
+    margin: 20px;
+}
+.container {
+    display: flex;
+}
+.section {
+    width: 50%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    background-color: #222;
+}
+.section h2 {
+    color: #a100ff; /* Purple color for headings */
+}
+.network-list {
+    list-style-type: none;
+    padding: 0;
+}
+.network-item {
+    padding: 5px;
+    border: 1px solid #a100ff; /* Purple border */
+    margin-bottom: 10px;
+}
+
+nav {
+    background-color: #222;
+    padding: 10px;
+}
+#navbar {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: space-around;
+}
+#navbar li {
+    display: inline;
+}
+#navbar a {
+    color: #a100ff; /* Purple color */
+    text-decoration: none;
+    padding: 8px 16px;
+}
+#navbar a:hover {
+    background-color: #7a00cc; /* Darker purple on hover */
+    color: #fff; /* White text on hover */
+}
+#start-logging {
+    background-color: #a100ff; /* Purple button */
+    color: #000; /* Black text */
+    border: none;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+#start-logging:hover {
+    background-color: #7a00cc; /* Darker purple on hover */
+}
+#adapter-display {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #222;
+    color: #a100ff;
+    border: 1px solid #ccc;
+}
+
+#control-center {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #222;
+    padding: 10px;
+    color: #a100ff;
+}
+
+#control-logo {
+    width: 50px; /* Adjust as needed */
+}
+
+#change-adapter {
+    background-color: #a100ff;
+    color: #000;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#change-adapter:hover {
+    background-color: #7a00cc;
+}
+.fake-browser-buttons {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.close-button,
+.minimize-button,
+.maximize-button {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.close-button {
+    background-color: red;
+}
+
+.minimize-button {
+    background-color: yellow;
+}
+
+.maximize-button {
+    background-color: green;
+}
+
+
+.window-controls {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.window-control {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin: 5px;
+}
+
+.window-control.minimize { background-color: #f5a623; }
+.window-control.maximize { background-color: #50e3c2; }
+.window-control.close { background-color: #e94e77; }
+
+.modal-logo {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    width: 50px; /* Adjust as needed */
+}
+
+/* Modal styles */
+.modal {
+    position: fixed;
+    z-index: 20; /* On top of other content */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4); /* Black background with opacity */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: #222;
+    border: 1px solid #a100ff; /* Purple border */
+    padding: 20px;
+    color: #a100ff;
+    width: 400px; /* Adjust as needed */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow effect */
+}
+
+.adapter-selected { color: purple; }
+.adapter-starting { color: red; }
+.adapter-active { color: green; }
+.adapter-idle { color: yellow; }
+.adapter-unknown { color: gray; }
+
+
+    </style>
+</head>
+<body>
+    <!-- Live Background -->
+<video id="background-video" loop autoplay muted>
+    <source src="/static/background.mp4" type="video/mp4">
+</video>
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <img id="splash-logo" src="/static/logo.png" alt="NOVA Logo">
+    </div>
+    
+    <!-- Main Content -->
+    <div id="main-content" style="display: none;">
+        <div id="control-center">
+            <img src="/static/logo.png" alt="NOVA Logo" id="control-logo">
+            <h1>Nova Panel Dashboard</h1>
+            <button id="change-adapter">Change Adapter</button>
+            <span id="clock"></span>
+            <span id="uptime">Uptime: 0:00</span>
+            <div id="current-adapter">Current Adapter: <span id="adapter-name">None</span></div>
+        </div>
+        
+        
+
+    <body>
+        <!-- Navigation Bar -->
+        <nav>
+            <ul id="navbar">
+                <li><a href="#" onclick="showPage('home')">Home</a></li>
+                <li><a href="#" onclick="showPage('analytics')">Analytics</a></li>
+                <li><a href="#" onclick="showPage('map')">Map</a></li>
+                <li><a href="#" onclick="showPage('attack')">Attack</a></li>
+            </ul>
+        </nav>
+        
+        
+        
+    
+<!-- Home Page (Dashboard) -->
+<div id="home" class="page">
+    <!-- Container for Local and Network Sections -->
+    <div class="container">
+        <!-- Local Section -->
+        <div class="section" id="local">
+            <h2>Local Statistics</h2>
+            <h2>CPU Usage:</h2>
+            <span id="cpu-usage-label">0%</span>
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <canvas id="cpuUsageChart" width="400" height="350"></canvas>
+        </div>
+
+        <!-- Network Section -->
+        <div class="section" id="network">
+            <h2>Local Networks</h2>
+            <div id="loading-indicator" style="display: none;">Being a Nosey Bitch, Hang On ᕕ( ᐛ )ᕗ...</div>
+            <ul class="network-list" id="network-list">
+                <!-- Networks will be added here -->
+            </ul>
+        </div>
+        <div id="adapter-selection-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="fake-browser-buttons">
+                    <span class="close-button"></span>
+                    <span class="minimize-button"></span>
+                    <span class="maximize-button"></span>
+                </div>
+                <h2>Select Wireless Adapter</h2>
+                <select id="adapter-list">
+                    <!-- Adapters will be added here -->
+                </select>
+                <button id="activate-adapter">Activate</button>
+            </div>
+        </div>
+        <!-- Analytics Page -->
+        <div id="analytics" class="page" style="display: none;">
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <h1>Analytics Page</h1>
+            <p>Be Sneaky U・x・U</p>
+            
+            <!-- In-Range Section -->
+            <div id="in-range-section">
+                <h2>In-Range</h2>
+                <!-- Security Strength Chart -->
+                <canvas id="inRangeSecurityChart"></canvas>
+                <!-- Additional statistics here -->
+            </div>
+            
+            <!-- All-Time Section -->
+            <div id="all-time-section">
+                <h2>All-Time</h2>
+                <!-- Security Strength Chart -->
+                <canvas id="allTimeSecurityChart"></canvas>
+                <!-- Additional statistics here -->
+            </div>
+        </div>
+        
+        
+    
+     <!-- Map Page -->
+     <div id="map" class="page" style="display: none;">
+        <h1>Network Map</h1>
+        <!-- Placeholder for GPS logging data -->
+        <div id="map-placeholder">Map coming soon...</div>
+    </div>
+    
+    <!-- Attack Page -->
+    <div id="attack" class="page" style="display: none;">
+        <h1>Attack Page</h1>
+        <!-- Placeholder for ethical reasons -->
+    </div>
+    <div id="home" class="page"> ... </div>
+    <div id="analytics" class="page" style="display: none;">
+        <h1>Analytics Page</h1>
+        <p>Be Sneaky U・x・U</p>
+        
+        <!-- In-Range Section -->
+        <div id="in-range-section">
+            <h2>In-Range</h2>
+            <!-- Security Strength Chart -->
+            <canvas id="inRangeSecurityChart"></canvas>
+            <!-- Additional statistics here -->
+        </div>
+        
+        <!-- All-Time Section -->
+        <div id="all-time-section">
+            <h2>All-Time</h2>
+            <!-- Security Strength Chart -->
+            <canvas id="allTimeSecurityChart"></canvas>
+            <!-- Additional statistics here -->
+        </div>
+    </div>
+    
+    <div id="map" class="page" style="display: none;"> ... </div>
+    <div id="attack" class="page" style="display: none;"> ... </div>
+    
+</div>
+
+    </div>
+    <button id="start-logging">Start War Logging ♨(⋆‿⋆)♨</button>
+</div>
+<script>
+    function showPage(pageId) {
+        var pages = document.getElementsByClassName('page');
+        for (var i = 0; i < pages.length; i++) {
+            pages[i].style.display = 'none';
+        }
+        document.getElementById(pageId).style.display = 'block';
+    }
+</script>
+</body>
+</html>
+    <script>
+// Function to hide splash screen
+function hideSplashScreen() {
+    var splashScreen = document.getElementById('splash-screen');
+    splashScreen.style.opacity = '0';
+    setTimeout(function () {
+        splashScreen.style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+        // Show the adapter selection modal here
+        document.getElementById('adapter-selection-modal').style.display = 'block';
+    }, 1000); // 1-second fade-out duration
+}
+
+// Hide splash screen after a delay (e.g., 3 seconds)
+setTimeout(hideSplashScreen, 3000);
+
+
+function showPage(pageId) {
+    var pages = document.getElementsByClassName('page');
+    for (var i = 0; i < pages.length; i++) {
+        pages[i].style.display = 'none';
+    }
+    document.getElementById(pageId).style.display = 'block';
+}
+
+
+        // Show the home page initially
+        showPage('home');
+        document.getElementById('start-logging').addEventListener('click', function() {
+    var btn = this;
+    if (btn.textContent.trim() === "Start War Logging ♨(⋆‿⋆)♨") {
+        btn.textContent = "Stop Logging? ( ˇ෴ˇ )";
+        startLogging();
+    } else {
+        btn.textContent = "Start War Logging ♨(⋆‿⋆)♨";
+        stopLogging();
+    }
+});
+
+
+        function fetchCpuUsage() {
+    fetch('/get_cpu_usage')
+        .then(response => response.json())
+        .then(data => updateCpuUsage(data.cpu_usage))
+        .catch(error => console.error('Error:', error));
+}
+// Call fetchCpuUsage every second
+setInterval(fetchCpuUsage, 3000);
+
+        var loggingInterval;
+        
+        function startLogging() {
+    // Show the loading indicator
+    document.getElementById('loading-indicator').style.display = 'block';
+    // Wait for 3 seconds before starting the scanning interval
+    setTimeout(function() {
+        loggingInterval = setInterval(function() {
+            fetch('/start_scanning', { method: 'POST' })
+    .then(response => response.json())
+    .then(data => {
+        console.log(data); // Print the data to verify
+        updateNetworkList(data.networks);
+    })
+    .catch(error => console.error('Error:', error));
+        }, 10000); // every 10 seconds
+    }, 3000); // 3-second buffer
+}
+
+function stopLogging() {
+    // Hide the loading indicator
+    document.getElementById('loading-indicator').style.display = 'none';
+    clearInterval(loggingInterval);
+}
+
+function createSecurityChart(canvasId, data) {
+    var ctx = document.getElementById(canvasId).getContext('2d');
+    return new Chart(ctx, {
+        type: 'pie', // Pie chart to represent percentages
+        data: {
+            labels: ['WEP', 'WPA', 'WPA2', 'WPA3', 'None', 'Unknown'],
+            datasets: [{
+                data: data, // [10, 20, 30, 40, 50, 60] <- Example data
+                backgroundColor: [
+                    'red', 'orange', 'yellow', 'green', 'blue', 'purple'
+                ]
+            }]
+        }
+    });
+}
+
+// Example usage:
+var inRangeData = [10, 20, 30, 40, 50, 60];
+var allTimeData = [100, 200, 300, 400, 500, 600];
+
+createSecurityChart('inRangeSecurityChart', inRangeData);
+createSecurityChart('allTimeSecurityChart', allTimeData);
+function fetchStats() {
+  fetch('/stats')
+    .then(response => response.json())
+    .then(data => {
+      // Assuming the server returns a JSON object with 'allTime' and 'inRange' properties
+      createSecurityChart('inRangeSecurityChart', data.inRange);
+      createSecurityChart('allTimeSecurityChart', data.allTime);
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// Call the function when the analytics page is shown
+document.getElementById('analytics').addEventListener('show', fetchStats);
+
+
+function updateNetworkList(networks) {
+    var networkList = document.getElementById('network-list');
+    networkList.innerHTML = '';
+
+    networks.forEach(function(network) {
+        var listItem = document.createElement('li');
+        listItem.className = 'network-item';
+        listItem.textContent = 'SSID: ' + network.SSID + ' | Security: ' + mapSecurityLevel(network.Security);
+        networkList.appendChild(listItem);
+    });
+}
+function mapSecurityLevel(security) {
+    switch (security) {
+        case null:
+        case 'None':
+            return 'None (Open Network)';
+        case 1:
+            return 'WEP (Insecure)';
+        case 2:
+            return 'WPA (Outdated Password Protected)';
+        case 3:
+            return 'WPA2 (Secure)';
+        case 4:
+            return 'WPA3 (Extremely Secure)';
+        default:
+            return 'Unknown';
+    }
+}
+function showAdapterSelection() {
+    document.getElementById('adapter-selection-modal').style.display = 'block';
+}
+
+function loadAdapters() {
+    fetch('/get_adapters')
+        .then(response => response.json())
+        .then(data => {
+            console.log('Adapters:', data); // Log the adapters
+            var adapterList = document.getElementById('adapter-list');
+            adapterList.innerHTML = ''; // Clear previous adapters
+            data.adapters.forEach(function(adapter) {
+                var option = document.createElement('option');
+                option.value = adapter; // Assign the adapter value
+                option.textContent = adapter; // Display the adapter name
+                adapterList.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+// Load adapters when the page is ready
+document.addEventListener('DOMContentLoaded', function() {
+    loadAdapters();
+});
+
+function updateClock() {
+    var now = new Date();
+    var time = now.getHours() + ':' + now.getMinutes().toString().padStart(2, '0');
+    document.getElementById('clock').textContent = time;
+}
+
+var startTime = new Date();
+
+function updateUptime() {
+    var currentTime = new Date();
+    var uptime = Math.floor((currentTime - startTime) / 1000);
+    var hours = Math.floor(uptime / 3600);
+    var minutes = Math.floor((uptime % 3600) / 60);
+    var seconds = uptime % 60;
+    document.getElementById('uptime').textContent = hours + 'h ' + minutes + 'm ' + seconds + 's';
+}
+
+setInterval(updateClock, 1000); // Update the clock every second
+setInterval(updateUptime, 1000); // Update the uptime every second
+
+
+function updateCpuUsage(usage) {
+    cpuUsageData.push(usage);
+    cpuUsageLabels.push('');
+    if (cpuUsageData.length > 10) {
+        cpuUsageData.shift(); // Keep only last 10 data points
+        cpuUsageLabels.shift();
+    }
+    cpuUsageChart.update();
+
+    // Update the CPU usage label
+    document.getElementById('cpu-usage-label').textContent = usage + '%';
+}
+
+
+function activateAdapter() {
+    var selectedAdapter = document.getElementById('adapter-list').value;
+    // Send the selected adapter ID to the server for activation
+    fetch('/activate_adapter', {
+        method: 'POST',
+        body: JSON.stringify({ adapter: selectedAdapter }),
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('Adapter activated successfully!');
+            // Hide the modal and update the current adapter display
+            document.getElementById('adapter-selection-modal').style.display = 'none';
+            document.getElementById('current-adapter').textContent = selectedAdapter;
+        } else {
+            alert('Failed to activate adapter.');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// Event listener for the activate button
+document.getElementById('activate-adapter').addEventListener('click', activateAdapter);
+
+
+
+
+// Event listener for the activate button
+document.getElementById('activate-adapter').addEventListener('click', activateAdapter);
+document.getElementById('change-adapter').addEventListener('click', function() {
+    document.getElementById('adapter-selection-modal').style.display = 'block';
+});
+
+// Load adapters when the page is ready
+document.addEventListener('DOMContentLoaded', function() {
+    loadAdapters();
+});
+var cpuUsageData = [];
+var cpuUsageLabels = [];
+for (var i = 0; i < 10; i++) {
+    cpuUsageData.push(0); // Initial data
+    cpuUsageLabels.push(''); // Initial labels
+}
+
+var ctx = document.getElementById('cpuUsageChart').getContext('2d');
+var cpuUsageChart = new Chart(ctx, {
+    type: 'line', // Change to 'bar' or other types if you prefer
+    data: {
+        labels: cpuUsageLabels,
+        datasets: [{
+            label: 'CPU Usage (%)',
+            data: cpuUsageData,
+            backgroundColor: 'rgba(161, 0, 255, 0.2)', // Purple-ish background
+            borderColor: '#a100ff', // Purple border
+            borderWidth: 2
+        }]
+    },
+    options: {
+        scales: {
+            x: {
+                display: true,
+                title: {
+                    display: true,
+                    text: 'Time'
+                }
+            },
+            y: {
+                display: true,
+                title: {
+                    display: true,
+                    text: 'Usage (%)'
+                },
+                beginAtZero: true,
+                max: 100
+            }
+        }
+    }
+});
+function monitorAdapterState() {
+    fetch('/get_adapter_state')
+        .then(response => response.json())
+        .then(data => {
+            updateAdapterState(data.state);
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+// Update the adapter state every 5 seconds
+setInterval(monitorAdapterState, 5000);
+function updateAdapterState(state) {
+    var subtitle = document.getElementById('current-adapter-subtitle');
+    subtitle.className = ''; // Reset the class
+
+    switch (state) {
+        case 'selected':
+            subtitle.className = 'adapter-selected';
+            break;
+        case 'starting':
+            subtitle.className = 'adapter-starting';
+            break;
+        case 'active':
+            subtitle.className = 'adapter-active';
+            break;
+        case 'idle':
+            subtitle.className = 'adapter-idle';
+            break;
+        default:
+            subtitle.className = 'adapter-unknown';
+    }
+}
+
+
+showPage('home');
+
+
+    </script>
+
+
+</html>
