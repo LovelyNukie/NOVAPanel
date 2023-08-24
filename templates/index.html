@@ -261,8 +261,8 @@ nav {
         <!-- Navigation Bar -->
         <nav>
             <ul id="navbar">
-                <li><a href="#" onclick="showPage('home')">Home</a></li>
-                <li><a href="#" onclick="showPage('analytics')">Analytics</a></li>
+                <li><a href="/">Home</a></li>
+                <li><a href="/analytics">Analytics</a></li>
                 <li><a href="#" onclick="showPage('map')">Map</a></li>
                 <li><a href="#" onclick="showPage('attack')">Attack</a></li>
             </ul>
@@ -448,8 +448,8 @@ setInterval(fetchCpuUsage, 3000);
         updateNetworkList(data.networks);
     })
     .catch(error => console.error('Error:', error));
-        }, 10000); // every 10 seconds
-    }, 3000); // 3-second buffer
+        }, 8000); // every 10 seconds
+    }, 5000); // 3-second buffer
 }
 
 function stopLogging() {

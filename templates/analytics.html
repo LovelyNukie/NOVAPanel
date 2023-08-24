@@ -1,0 +1,148 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOVA Panel - Analytics</title>
+    <video autoplay loop muted playsinline id="background-video">
+        <source src="{{ url_for('static', filename='background.mp4') }}" type="video/mp4">
+    </video>
+    
+    <style>
+        .section {
+            border: 1px solid #e0e0e0;
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #f9f9f9;
+        }
+        .section-title {
+            font-size: 1.1em;
+            color: #555;
+            margin-bottom: 5px;
+        }
+    
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            background: url('/static/live-background.jpg') no-repeat center center fixed; /* Live background */
+            background-size: cover;
+        }
+        #background-video {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    min-width: 100%;
+    min-height: 100%;
+    z-index: -1;
+}
+
+        .header {
+            background-color: #222;
+            padding: 10px;
+            color: #a100ff;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+        }
+        .header-logo {
+            max-width: 100px; /* Adjust as needed */
+        }
+        nav {
+            margin-left: 20px; /* Space between logo and navbar */
+        }
+        nav a {
+            color: #a100ff; /* Purple color */
+            text-decoration: none;
+            padding: 5px 10px;
+            margin: 0 5px;
+            border: 2px solid #a100ff;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        nav a:hover {
+            background-color: #a100ff;
+            color: #fff;
+        }
+        .main-container {
+            display: flex;
+            justify-content: space-around;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent background */
+        }
+        /* Rest of the styles remain the same */
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="/static/logo.png" alt="Logo" class="header-logo"> <!-- Path to the logo -->
+        <nav>
+            <!-- Updated navigation menu -->
+            <a href="/">Home</a>
+            <a href="/analytics.html">Analytics</a>
+            <a href="/map.html">Map</a>
+            <a href="/attack.html">Attack</a>
+        </nav>
+    </div>
+    <div class="main-container">
+        <div class="panel">
+            <h2 class="panel-title">Local-Range Data</h2>
+            <div class="panel-chart"><canvas id="inRangeSecurityChart"></canvas></div>
+            <div class="panel-key"><!-- Color key here --></div>
+            <div class="panel-text"><!-- Textual representation here --></div>
+            <div class="panel-filter"><!-- Filtering options here --></div>
+        </div>
+        <div class="panel">
+            <h2 class="panel-title">All-Time Data</h2>
+            <div class="panel-chart"><canvas id="allTimeSecurityChart"></canvas></div>
+            <div class="panel-key"><!-- Color key here --></div>
+            <div class="panel-text"><!-- Textual representation here --></div>
+            <div class="panel-filter"><!-- Filtering options here --></div>
+        </div>
+    </body>
+    </html>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Including the Chart.js library -->
+<script>
+    // Function to create a security pie chart
+    function createSecurityChart(canvasId, data) {
+        var ctx = document.getElementById(canvasId).getContext('2d');
+        return new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['None (Open Network)', 'WEP (Insecure)', 'WPA (Outdated Password Protected)', 'WPA2 (Secure)', 'WPA3 (Extremely Secure)', 'Unknown'],
+
+                datasets: [{
+                    data: data,
+                    backgroundColor: ['red', 'orange', 'yellow', 'green', 'blue', 'purple']
+                }]
+            }
+        });
+    }
+    
+        // Create charts for in-range and all-time data
+        createSecurityChart('inRangeSecurityChart', inRangeData);
+        createSecurityChart('allTimeSecurityChart', allTimeData);
+        
+        // TODO: Add color key, textual representation, filtering options, and other functionalities
+    </script>
+    
+    <script>
+        function fetchStats() {
+    fetch('/get_stats')
+        .then(response => response.json())
+        .then(data => {
+            // Assuming the server returns a JSON object with 'local_range_stats' and 'all_time_stats' properties
+            createSecurityChart('inRangeSecurityChart', data.local_range_stats);
+            createSecurityChart('allTimeSecurityChart', data.all_time_stats);
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+// Call the function when the page loads
+fetchStats();
+
+    </script>
+    

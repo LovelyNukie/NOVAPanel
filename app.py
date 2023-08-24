@@ -8,27 +8,182 @@ import os
 import pandas as pd
 if os.geteuid() != 0:
     exit("You need to have root privileges to run this script.\nPlease try again, this time using 'sudo'. Exiting.")
+# Define the mapping function
+def map_security_level(security):
+    switcher = {
+        0: 'None',
+        1: 'WEP',
+        2: 'WPA',
+        3: 'WPA2',
+        4: 'WPA3',
+        # Add more cases if needed
+    }
+    return switcher.get(security, 'Unknown')
 
 
 app = Flask(__name__)
-@app.route('/stats')
+@app.route('/start_scanning', methods=['POST'])
+def start_scanning():
+    # Get local-range networks by scanning and updating all-time data
+    local_range_df = scan_and_update()
+    print(local_range_df)  # Print the networks to verify the data
+    return jsonify(networks=local_range_df.to_dict(orient='records'))
+
+def write_to_csv(networks):
+    # Path to the CSV file
+    csv_path = 'network_log.csv'
+
+    # Reading existing contents of the CSV file (if any)
+    try:
+        existing_df = pd.read_csv(csv_path)
+    except FileNotFoundError:
+        existing_df = pd.DataFrame(columns=['SSID', 'Security'])
+
+    # Converting new scan results into a DataFrame
+    new_df = pd.DataFrame(networks)
+
+    # Concatenating old and new DataFrames, removing duplicates
+    combined_df = pd.concat([existing_df, new_df], ignore_index=True).drop_duplicates()
+
+    # Writing the concatenated DataFrame back to the CSV file
+    combined_df.to_csv(csv_path, index=False)
+def scan_and_update():
+    # Scanning the networks
+    local_range_networks = ScanNetworks.scan_networks()
+
+    # Creating a DataFrame for local range networks
+    local_range_df = pd.DataFrame(local_range_networks)
+
+    # Path to the CSV files
+    local_csv_path = 'network_log.csv'
+    all_time_csv_path = 'collected_networks.csv'
+
+    # Writing local range data to CSV
+    local_range_df.to_csv(local_csv_path, index=False)
+
+    # Reading existing contents of the all-time CSV file (if any)
+    try:
+        all_time_df = pd.read_csv(all_time_csv_path)
+    except FileNotFoundError:
+        all_time_df = pd.DataFrame(columns=['SSID', 'Security'])
+    
+    # Concatenating old and new DataFrames
+    combined_df = pd.concat([all_time_df, local_range_df], ignore_index=True)
+
+    # Removing duplicates based on SSID
+    combined_df.drop_duplicates(subset=['SSID'], inplace=True)
+
+    # Writing the combined DataFrame back to the all-time CSV file
+    combined_df.to_csv(all_time_csv_path, index=False)
+
+    return local_range_df
+
+
+def analyze_all_time_data():
+    csv_path = 'collected_networks.csv'
+    
+    # Dictionary to store the count of each security type, including 'None'
+    security_counts = {str(i): 0 for i in range(4)}
+    security_counts['None'] = 0  # Add the 'None' key
+
+    try:
+        with open(csv_path, 'r') as file:
+            next(file)  # Skip the header line
+            for line in file:
+                # Split the line by comma
+                parts = line.strip().split(',')
+                
+                # Get the security value, assuming it's the second part of the line
+                security_value = parts[1]
+                
+                # Increment the count for this security value
+                if security_value in security_counts:
+                    security_counts[security_value] += 1
+                else:
+                    security_counts['None'] += 1  # Increment the count for 'None' if the value is not recognized
+
+        # Convert the counts to a list in the desired order
+        stats = [security_counts[str(i)] for i in range(4)]
+        stats.append(security_counts['None'])  # Add the count for 'None'
+        
+        return stats
+
+    except FileNotFoundError:
+        print("File not found!")
+        return [0, 0, 0, 0, 0]
+def analyze_local_range_data():
+    csv_path = 'network_log.csv'
+    
+    # Dictionary to store the count of each security type, including 'None'
+    security_counts = {str(i): 0 for i in range(4)}
+    security_counts['None'] = 0  # Add the 'None' key
+
+    try:
+        with open(csv_path, 'r') as file:
+            next(file)  # Skip the header line
+            for line in file:
+                # Split the line by comma
+                parts = line.strip().split(',')
+                
+                # Get the security value, assuming it's the second part of the line
+                security_value = parts[1]
+                
+                # Increment the count for this security value
+                if security_value in security_counts:
+                    security_counts[security_value] += 1
+                else:
+                    security_counts['None'] += 1  # Increment the count for 'None' if the value is not recognized
+
+        # Convert the counts to a list in the desired order
+        stats = [security_counts[str(i)] for i in range(4)]
+        stats.append(security_counts['None'])  # Add the count for 'None'
+        
+        return stats
+
+    except FileNotFoundError:
+        print("File not found!")
+        return [0, 0, 0, 0, 0]
+def save_all_time_data():
+    # Path to the CSV files
+    network_log_path = 'network_log.csv'
+    collected_networks_path = 'collected_networks.csv'
+
+    # Reading existing contents of both CSV files
+    try:
+        existing_network_log_df = pd.read_csv(network_log_path)
+    except FileNotFoundError:
+        existing_network_log_df = pd.DataFrame(columns=['SSID', 'Security'])
+
+    try:
+        collected_networks_df = pd.read_csv(collected_networks_path)
+    except FileNotFoundError:
+        collected_networks_df = pd.DataFrame(columns=['SSID', 'Security'])
+
+    # Concatenating the DataFrames and removing duplicates
+    all_time_df = pd.concat([existing_network_log_df, collected_networks_df], ignore_index=True).drop_duplicates()
+
+    # Writing the concatenated DataFrame back to the collected_networks.csv file
+    all_time_df.to_csv(collected_networks_path, index=False)
+
+    # Clearing the network_log.csv file
+    existing_network_log_df.iloc[0:0].to_csv(network_log_path, index=False)
+
+# Call this function before starting the scanning process
+save_all_time_data()
+
+@app.route('/get_stats', methods=['GET'])
 def get_stats():
-    # Read data from CSV
-    network_data = pd.read_csv('network_log.csv')
+    # Get local range stats and all-time stats
+    local_range_stats = analyze_local_range_data()
+    all_time_stats = analyze_all_time_data()
 
-    # Analyze data to get all-time stats
-    all_time_stats = analyze_data(network_data)
+    # Combine or format the stats as needed
+    stats = {
+        'local_range_stats': local_range_stats,
+        'all_time_stats': all_time_stats
+    }
 
-    # Analyze data to get in-range stats (modify as needed)
-    in_range_stats = analyze_data(network_data)  # Modify as needed
-
-    # Return the stats as JSON
-    return jsonify(allTime=all_time_stats, inRange=in_range_stats)
-
-def analyze_data(data):
-    # Analyze the data and return the stats
-    # Modify this function as needed
-    return [10, 20, 30, 40, 50, 60]
+    return jsonify(stats)
 
 @app.route('/')
 def index():
@@ -37,11 +192,7 @@ def index():
 def get_cpu_usage():
     cpu_usage = psutil.cpu_percent(interval=1)
     return jsonify({'cpu_usage': cpu_usage})
-@app.route('/start_scanning', methods=['POST'])
-def start_scanning():
-    networks = ScanNetworks.scan_networks()
-    print(networks)  # Print the networks to verify the data
-    return jsonify(networks=networks)
+
 
 @app.route('/get_adapters', methods=['GET'])
 def fetch_adapters():
@@ -65,6 +216,9 @@ def activate_adapter():
     success = "UP" in status_output
 
     return jsonify({'status': 'success' if success else 'failure'})
+@app.route('/analytics')
+def analytics():
+    return render_template('analytics.html')
 @app.route('/get_adapter_state', methods=['GET'])
 def get_adapter_state():
     adapter = 'wlan0'  # Replace with your logic to get the selected adapter
