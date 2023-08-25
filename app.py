@@ -6,6 +6,15 @@ import subprocess
 import psutil
 import os
 import pandas as pd
+import gpsd
+import gps
+import time
+import netifaces
+from datetime import datetime
+from pywifi import PyWiFi, const
+import csv
+from math import sin, cos, sqrt, atan2, radians
+gpsd.connect()
 if os.geteuid() != 0:
     exit("You need to have root privileges to run this script.\nPlease try again, this time using 'sudo'. Exiting.")
 # Define the mapping function
@@ -20,15 +29,224 @@ def map_security_level(security):
     }
     return switcher.get(security, 'Unknown')
 
+def calculate_distance(lat1, lon1, lat2, lon2):
+    # Radius of the Earth in kilometers
+    R = 6371.0
 
+    # Converting coordinates from degrees to radians
+    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+
+    # Differences in coordinates
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+
+    # Haversine formula
+    a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    distance = R * c
+
+    return distance * 1000  # Return distance in meters (convert from kilometers)
 app = Flask(__name__)
+
+@app.route('/initiate_scan', methods=['GET'])
+def initiate_scan():
+    # Get GPS data (existing function)
+    gps_data = get_gps_data().get_json()
+
+    # TODO: Call the function to perform network scan (to be implemented)
+    networks = perform_network_scan()
+
+    # Create a timestamp for the scan
+    timestamp = datetime.now().isoformat()
+
+    # Write the data to CSV
+    with open('network_scans.csv', mode='a', newline='') as file:
+        writer = csv.writer(file)
+        for network in networks:
+            writer.writerow([timestamp, gps_data['latitude'], gps_data['longitude'], network['ssid'], network['signal_strength']])
+
+    return jsonify({'message': 'Scan initiated and data saved!', 'scan_data': networks})
+
+def perform_network_scan():
+    wifi = PyWiFi()
+    iface = wifi.interfaces()[0] # Use the first available interface
+
+    # Scan for networks
+    iface.scan()
+    scan_results = iface.scan_results()
+
+    # Extract SSID and signal strength
+    networks = []
+    for result in scan_results:
+        networks.append({
+            'ssid': result.ssid,
+            'signal_strength': result.signal
+        })
+
+    return networks
+
+@app.route('/get_adapters', methods=['GET'])
+def get_adapters():
+    # Getting all the network interfaces
+    interfaces = netifaces.interfaces()
+
+    # Filtering only the wireless ones (usually start with 'wl')
+    wireless_adapters = [interface for interface in interfaces if interface.startswith('wl')]
+
+    return jsonify({'adapters': wireless_adapters})
+def test_gps_adapter():
+    try:
+        response = requests.get('http://localhost:5000/get_gps_data')
+        data = response.json()
+        print("GPS Data:", data) # Debug print
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+
+        # Check if latitude and longitude are populated (not zero)
+        if latitude != 0 and longitude != 0:
+            return True
+        else:
+            return False
+    except Exception as e:
+        print(f"Error testing GPS adapter: {e}")
+        return False
+
+@app.route('/get_usb_devices', methods=['GET'])
+def get_usb_devices():
+    result = subprocess.run(['lsusb'], stdout=subprocess.PIPE)
+    output = result.stdout.decode('utf-8')
+
+    # Split the lines and extract only the name part
+    usb_devices = [{"id": line.split(' ')[1], "name": " ".join(line.split(' ')[-4:]).strip()} for line in output.split('\n') if line]
+
+    return jsonify({'usb_devices': usb_devices})
+
+
+@app.route('/activate_gps_device', methods=['POST'])
+def activate_gps_device():
+    device_id = request.json['device_id']
+    device_name = request.json['device_name']
+    
+    # Logic to activate and test the selected GPS device
+    success = activate_and_test_device(device_id, device_name)
+
+    if success:
+        return jsonify({'message': 'GPS device activated successfully'})
+    else:
+        return jsonify({'message': 'Error fetching GPS device'}), 400
+
+def activate_and_test_device(device_id, device_name):
+    # Logic to bring up the adapter and test GPS
+    # ...
+
+    # Test the GPS adapter
+    success = test_gps_adapter()
+    
+    return success if success else False
+
+    return jsonify({'gps_devices': gps_devices})
+@app.route('/get_gps_data', methods=['GET'])
+def get_gps_data():
+    packet = gpsd.get_current()
+    return jsonify({
+        'latitude': packet.lat,
+        'longitude': packet.lon
+    })
+@app.route('/activate_gps_adapter', methods=['POST'])
+def activate_gps_adapter():
+    adapter = request.json['adapter']
+    
+    # Logic to activate the selected GPS adapter
+    # ...
+
+    return jsonify({'message': 'GPS adapter changed successfully'})
+@app.route('/collect_data', methods=['POST'])
+def collect_data():
+    # Extracting the posted data
+    data = request.json
+    timestamp = data['timestamp']
+    latitude = data['latitude']
+    longitude = data['longitude']
+    scanData = data['scanData']
+
+    # Define the path to the CSV file
+    csv_path = 'collected_scans.csv'
+
+    # Append the data to the CSV file without clearing previous content
+    with open(csv_path, mode='a', newline='') as file:
+        writer = csv.writer(file)
+        for scan in scanData:
+            # Write the data for each scan
+            writer.writerow([timestamp, latitude, longitude, scan['ssid'], scan['signal_strength']])
+
+    return jsonify({'message': 'Data collected successfully!'})
+
+def perform_network_triangulation():
+    # Create an object for scanning networks
+    wifi = PyWiFi()
+    iface = wifi.interfaces()[0] # Use the first available interface
+    
+    # Scan for networks
+    iface.scan()
+    scan_results = iface.scan_results()
+    
+    # Get GPS data
+    gps_data = get_gps_data().get_json()
+    
+    # Extract SSID, security level, signal strength, and GPS coordinates
+    networks = []
+    for result in scan_results:
+        security = map_security_level(result.akm[0].value) if result.akm else 'Unknown'
+        networks.append({
+            'ssid': result.ssid,
+            'security': security,
+            'signal_strength': result.signal, # Signal quality
+            'latitude': gps_data['latitude'],
+            'longitude': gps_data['longitude']
+        })
+
+    return networks
+
+
+def save_collected_data(networks):
+    csv_path = 'collected_networks.csv'
+    
+    # Read existing contents of the CSV file (if any)
+    try:
+        existing_df = pd.read_csv(csv_path)
+    except FileNotFoundError:
+        existing_df = pd.DataFrame(columns=['SSID', 'Security', 'Signal_Strength', 'Latitude', 'Longitude'])
+    
+    # Converting new scan results into a DataFrame
+    new_df = pd.DataFrame(networks)
+    
+    # Concatenating old and new DataFrames (keeping duplicates since we want multiple observations)
+    combined_df = pd.concat([existing_df, new_df], ignore_index=True)
+
+    # Writing the concatenated DataFrame back to the CSV file
+    combined_df.to_csv(csv_path, index=False)
+
 @app.route('/start_scanning', methods=['POST'])
 def start_scanning():
     # Get local-range networks by scanning and updating all-time data
     local_range_df = scan_and_update()
     print(local_range_df)  # Print the networks to verify the data
     return jsonify(networks=local_range_df.to_dict(orient='records'))
-
+def read_collected_data(filename):
+    data = []
+    with open(filename, 'r') as file:
+        reader = csv.reader(file)
+        next(reader)  # Skip header
+        for row in reader:
+            timestamp, latitude, longitude, ssid, signal_strength = row
+            data.append({
+                'timestamp': timestamp,
+                'latitude': float(latitude),
+                'longitude': float(longitude),
+                'ssid': ssid,
+                'signal_strength': int(signal_strength)
+            })
+    return data
 def write_to_csv(networks):
     # Path to the CSV file
     csv_path = 'network_log.csv'
@@ -219,6 +437,9 @@ def activate_adapter():
 @app.route('/analytics')
 def analytics():
     return render_template('analytics.html')
+@app.route('/map')
+def map():
+    return render_template('map.html')
 @app.route('/get_adapter_state', methods=['GET'])
 def get_adapter_state():
     adapter = 'wlan0'  # Replace with your logic to get the selected adapter
