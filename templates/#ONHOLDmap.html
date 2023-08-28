@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOVA Panel - Map</title>
+    <style>
+      
+#background-video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -1; /* Keep it behind other content */
+}
+        #splash-logo {
+            width: 215px; /* Adjust the size as needed */
+            animation: fadeIn 2s ease-in-out;
+            image-rendering: optimizeQuality; /* Suggests the browser to prioritize quality over speed */
+            will-change: transform; /* Indicates that the element will be animated */
+
+        }
+        @keyframes bounceIn {
+    0% {
+        transform: scale(0.1);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+#splash-logo {
+    animation: bounceIn 2s;
+}
+
+        body {
+    font-family: Arial, sans-serif;
+    background-color: #000;
+    color: #fff;
+    margin: 20px;
+}
+.container {
+    display: flex;
+}
+.section {
+    width: 50%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    background-color: #222;
+}
+.section h2 {
+    color: #a100ff; /* Purple color for headings */
+}
+.network-list {
+    list-style-type: none;
+    padding: 0;
+}
+.network-item {
+    padding: 5px;
+    border: 1px solid #a100ff; /* Purple border */
+    margin-bottom: 10px;
+}
+
+nav {
+    background-color: #222;
+    padding: 10px;
+    z-index: 1000; /* Below the navbar */
+}
+
+#navbar li {
+    display: inline;
+    margin-right: 50px; /* Adjust the right margin to shift the buttons */
+}
+
+#navbar li:last-child {
+    margin-right: 0; /* No right margin for the last item to avoid extra spacing */
+}
+
+#navbar a {
+    color: #a100ff; /* Purple color */
+    text-decoration: none;
+    padding: 8px 16px;
+}
+#navbar a:hover {
+    background-color: #7a00cc; /* Darker purple on hover */
+    color: #fff; /* White text on hover */
+}
+#start-logging {
+    background-color: #a100ff; /* Purple button */
+    color: #000; /* Black text */
+    border: none;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+#start-logging:hover {
+    background-color: #7a00cc; /* Darker purple on hover */
+}
+#adapter-display {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #222;
+    color: #a100ff;
+    border: 1px solid #ccc;
+}
+
+#control-center {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #222;
+    padding: 10px;
+    color: #a100ff;
+}
+
+#control-logo {
+    width: 50px; /* Adjust as needed */
+}
+
+#change-adapter {
+    background-color: #a100ff;
+    color: #000;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#change-adapter:hover {
+    background-color: #7a00cc;
+}
+.fake-browser-buttons {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.close-button,
+.minimize-button,
+.maximize-button {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.close-button {
+    background-color: red;
+}
+
+.minimize-button {
+    background-color: yellow;
+}
+
+.maximize-button {
+    background-color: green;
+}
+
+
+.window-controls {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.window-control {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin: 5px;
+}
+
+.window-control.minimize { background-color: #f5a623; }
+.window-control.maximize { background-color: #50e3c2; }
+.window-control.close { background-color: #e94e77; }
+
+.modal-logo {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    width: 50px; /* Adjust as needed */
+}
+
+/* Modal styles */
+.modal {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    z-index: 999; /* Below the navbar */
+    top: 60px; /* Below the navbar */
+    left: 0;
+    width: 100%;
+    height: calc(100% - 60px); /* Adjust based on navbar height */
+    /* other styles */
+}
+
+
+
+.modal-content {
+    background-color: #222;
+    border: 1px solid #a100ff; /* Purple border */
+    padding: 20px;
+    color: #a100ff;
+    width: 400px; /* Adjust as needed */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow effect */
+    width: 400px; /* Adjust as needed */
+}
+#adapter-button {
+    font-size: 14px; /* Adjust the font size */
+    padding: 10px 20px; /* Adjust the padding */
+    overflow: hidden; /* Prevent text overflow */
+    white-space: nowrap; /* Prevent text wrapping */
+    text-overflow: ellipsis; /* Add ellipsis if the text is too long */
+}
+
+.adapter-selected { color: purple; }
+.adapter-starting { color: red; }
+.adapter-active { color: green; }
+.adapter-idle { color: yellow; }
+.adapter-unknown { color: gray; }
+nav {
+    background-color: #222;
+    padding: 5px 10px; /* Reduced padding */
+    display: flex; /* Added flex */
+    align-items: center; /* Center items vertically */
+    nav {
+    z-index: 1000; /* This should be higher than the z-index of other elements */
+}
+
+}
+.truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px; /* Adjust this value to suit your design */
+}
+
+#navbar {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: space-around;
+    align-items: center; /* Center items vertically */
+    width: 100%; /* Take full width */
+}
+
+.logo-item {
+    flex-grow: 1; /* Allow the logo item to grow */
+}
+
+.gps-item {
+    display: flex;
+    align-items: center;
+}
+
+#navbar-logo {
+    width: 100px;
+}
+
+#change-gps {
+    background-color: #a100ff; /* Purple button */
+    color: #000; /* Black text */
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-size: 16px; /* Adjust to match other buttons */
+    margin: 4px 2px;
+}
+
+#change-gps:hover {
+    background-color: #7a00cc; /* Darker purple on hover */
+}
+.custom-select {
+    position: relative;
+    width: 200px; /* Adjust as needed */
+    background-color: #222;
+    color: #a100ff; /* Purple color */
+    border: 1px solid #a100ff; /* Purple border */
+    cursor: pointer;
+}
+
+.selected-option, .options div {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 5px;
+    border: 1px solid #a100ff; /* Purple border */
+    background-color: #222;
+    color: #a100ff; /* Purple color */
+}
+
+.options {
+    position: absolute;
+    width: 100%;
+    border: 1px solid #a100ff; /* Purple border */
+    background-color: #222;
+    z-index: 1;
+}
+
+.options div:hover {
+    background-color: #7a00cc; /* Darker purple on hover */
+    color: #fff; /* White text on hover */
+}
+
+.custom-button {
+    background-color: #a100ff; /* Purple button */
+    color: #000; /* Black text */
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.custom-button:hover {
+    background-color: #7a00cc; /* Darker purple on hover */
+}
+
+
+.custom-select {
+    position: relative;
+    width: 300px; /* Increased width */
+    height: 30px; /* Increased height */
+    line-height: 30px; /* Align text vertically */
+    background-color: #222;
+    color: #a100ff;
+    border: 1px solid #a100ff;
+    cursor: pointer;
+    display: inline-block; /* Make it align with the button */
+}
+
+.selected-option, .options div {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 5px;
+    border: 1px solid #a100ff;
+    background-color: #222;
+    color: #a100ff;
+}
+
+.options {
+    position: absolute;
+    width: 100%;
+    border: 1px solid #a100ff;
+    background-color: #222;
+    z-index: 1;
+}
+
+.options div:hover {
+    background-color: #7a00cc;
+    color: #fff;
+}
+
+.custom-button {
+    background-color: #a100ff;
+    color: #000;
+    border: none;
+    padding: 10px 15px; /* Reduced padding */
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-size: 16px; /* Adjust to match other buttons */
+    height: 30px; /* Match the height of the custom-select */
+    display: inline-block; /* Make it align with the custom-select */
+}
+
+.custom-button:hover {
+    background-color: #7a00cc;
+}
+#usb-device-list {
+    z-index: 100; /* Adjust this value as needed */
+}
+.window-controls {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.window-control {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin: 5px;
+}
+#adapter-modal {
+    display: none;
+}
+
+.window-control.minimize { background-color: #f5a623; }
+.window-control.maximize { background-color: #50e3c2; }
+.window-control.close { background-color: #e94e77; }
+.popup-window {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 20px;
+  background-color: #f9f9f9;
+  border: 1px solid #ccc;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  display: none; /* Hidden by default */
+}
+
+.popup-header {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.popup-content {
+  text-align: center;
+}
+
+#scan-bar {
+  width: 100%;
+}
+
+
+    </style>
+</head>
+<body>
+    <!-- Live Background -->
+    <video id="background-video" loop autoplay muted>
+        <source src="/static/background.mp4" type="video/mp4">
+    </video>
+
+ 
+    <!-- Navigation Bar -->
+    <nav>
+        <ul id="navbar">
+            <li class="logo-item"><img src="/static/logo.png" alt="NOVA Logo" id="navbar-logo"></li>
+            <li><a href="/">Home</a></li>
+            <li><a href="/analytics">Analytics</a></li>
+            <li><a href="#" onclick="showPage('map')">Map</a></li>
+            <li><a href="#" onclick="showPage('attack')">Attack</a></li>
+            <span id="active-adapter">Active Adapter: None</span>
+            <button id="adapter-button" onclick="showAdapterPrompt()">Select Adapter</button>
+            <div id="adapter-modal" class="modal">
+    <div class="modal-content">
+        <div class="window-controls">
+            <div class="window-control minimize"></div>
+            <div class="window-control maximize"></div>
+            <div class="window-control close"></div>
+        </div>
+        
+        <select id="adapter-list"></select>
+        <button onclick="connectAdapter()">Connect</button>
+    </div>
+</div>
+<div id="scan-navigator" class="popup-window">
+    <div class="popup-header">
+      <h3>Scanning Progress</h3>
+    </div>
+    <div class="popup-content">
+      <p id="scan-instruction">Please Move 150 Ft for Next Scan! <3</p>
+      <progress id="scan-bar" value="0" max="100"></progress>
+    </div>
+  </div>
+  
+            
+            
+            
+            
+        </ul>
+    </nav>
+    
+    <div id="triangulation-popup" class="modal">
+        <div class="modal-content">
+            <div class="triangulation-header">
+                <img src="/static/logo.png" alt="Logo" style="width: 100px;" />
+                <h1>Network Triangulation</h1>
+            </div>
+            <div class="triangulation-content">
+                <button id="start-initial-scan" onclick="startInitialScan()">Start Initial Scan</button>
+                <div id="scan-progress" class="progress-bar" style="display:none;">
+                    <div id="scan-progress-bar" class="progress-bar-inner"></div>
+                </div>
+                <div id="scan-navigator" class="scan-navigator" style="display:none;">
+                    <h2>Scan Navigator</h2>
+                    <p id="scan-navigator-instructions"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+  
+   
+    <!-- Map Page Content -->
+    <div id="map" class="page">
+        <h1 class="map-title">Network Map</h1>
+    <!-- Include Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+<!-- Include Leaflet JavaScript -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<!-- Create a Map Container -->
+<div id="map-container" style="width: 100%; height: 400px;"></div>
+
+<!-- Initialize the Map -->
+<script>
+  var map = L.map('map-container').setView([51.505, -0.09], 13);
+
+  // Add OpenStreetMap Tile Layer
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+  function updateGPSData() {
+    fetch('/get_gps_data')
+        .then(response => response.json())
+        .then(data => {
+            // Update the map using data.latitude and data.longitude
+        })
+        .catch(error => console.error('An error occurred:', error));
+
+    // Schedule the next update
+    setTimeout(updateGPSData, 1000); // 1 second
+}
+function connectAdapter() {
+    var selectedID = document.getElementById('adapter-list').value;
+    var adapterName = document.getElementById('adapter-list').selectedOptions[0].textContent;
+    fetch('/activate_gps_adapter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adapter: selectedID })
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+        document.getElementById('adapter-modal').style.display = 'none'; // Hide the modal
+        document.getElementById('active-adapter').textContent = "Active Adapter: " + adapterName; // Update navbar
+    })
+    .catch(error => {
+        console.error('Error connecting adapter:', error);
+    });
+}
+
+function startMappingTriangulation() {
+    // Start the first scan and instruct the user to move
+    initiateScan(1, 100, 250);
+}
+
+function initiateScan(scanNumber, minDistance, maxDistance) {
+    // Perform the scan
+    performScan(scanNumber);
+
+    // Instruct the user to move between minDistance and maxDistance feet
+    document.getElementById('movement-instructions').textContent = `Please Move ${minDistance}-${maxDistance}ft for Next Scan!`;
+
+    // Watch for sufficient movement
+    watchForMovement(scanNumber, minDistance, maxDistance);
+}
+
+
+var adapterName = document.getElementById('adapter-list').selectedOptions[0].textContent;
+document.getElementById('active-adapter').textContent = "Active Adapter: " + adapterName;
+
+
+function updateGPSData() {
+  fetch('/get_gps_data')
+    .then(response => response.json())
+    .then(data => {
+      // Update the map using data.latitude and data.longitude
+      var newLatLng = new L.LatLng(data.latitude, data.longitude);
+      map.setView(newLatLng, 13); // You can adjust the zoom level as needed
+    })
+    .catch(error => console.error('An error occurred:', error));
+
+  // Schedule the next update
+  setTimeout(updateGPSData, 3000); // 3 seconds
+}
+
+// Populate available adapters at page start
+window.onload = function() {
+    fetchAdapters();
+};
+function showAdapterPrompt() {
+    fetch('/get_usb_devices')
+    .then(response => response.json())
+    .then(data => {
+        const usbDevices = data.usb_devices;
+        const dropdown = document.getElementById('adapter-list');
+
+        usbDevices.forEach(device => {
+            const option = document.createElement('option');
+            option.value = device.id;
+            option.textContent = device.name;
+            dropdown.appendChild(option);
+        });
+            document.getElementById('adapter-modal').style.display = 'block'; // Show the modal
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+var currentScan = 1; // To keep track of the current scan number
+var distanceMoved = 0; // To track the distance moved
+
+document.getElementById('start-initial-scan-btn').addEventListener('click', startInitialScan);
+
+function startInitialScan() {
+    // Hide the "Start Initial Scan" button and show the progress bar
+    document.getElementById('start-initial-scan').style.display = 'none';
+    document.getElementById('scan-progress').style.display = 'block';
+
+    // Perform the scan and send the data to the server
+    initiateScan();
+}
+function sendScanData(scanData) {
+    // Endpoint URL
+    const url = '/collect_data';
+
+    // Options for the POST request
+    const options = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(scanData)
+    };
+
+    // Send a POST request to the server
+    fetch(url, options)
+        .then(response => response.json())
+        .then(data => {
+            // Handle the response (e.g., update UI)
+            console.log(data.message);
+        })
+        .catch(error => {
+            // Handle errors (e.g., show an error message)
+            console.error('Error:', error);
+        });
+}
+
+function performNetworkTriangulation() {
+    // Perform the scan (you may adapt the existing code)
+    let networks = perform_network_triangulation();
+
+    // Get GPS data
+    let gpsData = getGpsData();
+
+    // Return the scan data
+    return {
+        timestamp: new Date().toISOString(),
+        latitude: gpsData.latitude,
+        longitude: gpsData.longitude,
+        scanData: networks
+    };
+}
+
+function performScan(scanNumber) {
+    // Show scanning progress
+    document.getElementById('progress-bar').textContent = 'Scanning...';
+
+    // Simulate collecting data (replace with actual data collection logic)
+    setTimeout(() => {
+        // Update progress
+        document.getElementById('progress-bar').textContent = `Scan ${scanNumber}/3 Completed!`;
+
+        // Save GPS data and signal strengths
+        saveScanData(scanNumber);
+    }, 5000); // 2 seconds for demonstration
+}
+
+
+function getGPSData(scanNumber) {
+    fetch('/get_gps_data')
+        .then(response => response.json())
+        .then(data => {
+            if (data.latitude === 0 && data.longitude === 0) {
+                document.getElementById('scan-navigator-instructions').textContent = "No Dongle Data";
+            } else {
+                // Update progress
+                document.getElementById('progress-bar').textContent = `Scan ${scanNumber}/3 Completed!`;
+
+                // If this is not the last scan, guide the user to move for the next scan
+                if (scanNumber < 3) {
+                    // Show the Scan Navigator with instructions to move
+                    document.getElementById('scan-navigator').style.display = 'block';
+                    document.getElementById('scan-navigator-instructions').textContent = `Please Move 100ft to Start Next Scan!`;
+
+                    // Watch for sufficient movement (simulate or implement actual logic)
+                    watchForMovement(scanNumber);
+                } else {
+                    // All scans completed, handle completion
+                    handleCompletion();
+                }
+            }
+        });
+}
+function initiateScan() {
+    // Perform the initial scan
+    let scanData = performNetworkTriangulation();
+
+    // Update the progress bar (e.g., to 33% for the first scan)
+    document.getElementById('scan-progress-bar').style.width = '33%';
+
+    // Show the "Scan Navigator" section with instructions
+    document.getElementById('scan-navigator').style.display = 'block';
+    document.getElementById('scan-navigator-instructions').innerText = 'Please Move 100ft to Start the Next Scan!';
+
+    // Send the scan data to the server
+    sendScanData(scanData);
+
+    // More logic here, e.g., to handle subsequent scans or complete the process
+}
+
+
+function handleCompletion() {
+    // Prompt the user to continue gathering data
+    var continueScanning = confirm("Do you wish to continue gathering data? 3 out of 3 Minimum Requirement Met; Additional Scans Recommended");
+    
+    if (continueScanning) {
+        // Continue scanning
+        performScan(1);
+    } else {
+        // Complete the process and save the data
+        alert("Network Triangulation Mapping Completed! We will prompt you when connected to the internet to populate your map.");
+        // Save the collected data (implement as needed)
+    }
+}
+
+function watchForMovement(scanNumber, minDistance, maxDistance) {
+    // Simulate watching for movement (replace with actual logic)
+    setTimeout(() => {
+        // Movement detected, start the next scan with adjusted distances
+        initiateScan(scanNumber + 1, 50, 150);
+    }, 3000); // 3 seconds for demonstration
+}
+
+
+function collectData() {
+    // Simulate collecting data (e.g., GPS coordinates)
+    // You'll replace this with actual data collection logic
+    setTimeout(() => {
+        // Mark the scan as completed
+        document.getElementById('scan-progress-bar').innerText = `Scan ${currentScan}/3 Completed!`;
+
+        // Show the Scan Navigator for subsequent scans
+        if (currentScan < 3) {
+            showScanNavigator();
+        } else {
+            // After 3 scans, ask the user if they want to continue
+            promptContinueScanning();
+        }
+    }, 3000); // Simulate 3 seconds for data collection
+}
+
+function promptContinueScanning() {
+    // Prompt the user if they want to continue scanning
+    var userResponse = window.confirm("Do you wish to continue gathering data? 3 out of 3 Minimum Requirement Met; Additional Scans Recommended");
+
+    if (userResponse) {
+        // Continue scanning
+        currentScan++;
+        collectData();
+    } else {
+        // Save the collected data and finish
+        // Implement logic to save the data
+        alert("Network Triangulation Mapping Completed! We will prompt you when connected to the internet to populate your map.");
+    }
+}
+
+function saveCollectedData(gpsData, scanData) {
+    // Structure the data as needed
+    var dataToSave = {
+        timestamp: new Date().toISOString(),
+        latitude: gpsData.latitude,
+        longitude: gpsData.longitude,
+        scanData: scanData // Additional scan data (SSID, signal strength, etc.)
+    };
+
+    // Send the data to the server to be saved in the CSV file
+    fetch('/collect_data', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToSave)
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Handle the server response (e.g., a success message)
+    });
+}
+
+function showScanNavigator() {
+    // Show the Scan Navigator panel
+    var scanNavigator = document.getElementById('scan-navigator');
+    scanNavigator.style.display = 'block';
+
+    // Update the instructions dynamically based on the distance to move
+    var instructionElement = document.getElementById('scan-navigator-instructions');
+    instructionElement.textContent = `Please Move ${distanceMoved} To Start the Next Scan!`;
+
+    // You can add logic here to continuously update the distance as the user moves
+    // E.g., fetching new GPS data and updating the instructionElement text
+}
+
+function updateScanInstruction(distanceToMove) {
+  // Only update the instruction if the first scan has been completed
+  if (firstScanCompleted) {
+    var instructionElement = document.getElementById('scan-instruction');
+    instructionElement.textContent = "Please Move " + distanceToMove.toFixed(0) + " Ft for Next Scan! <3";
+  }}
+
+
+function fetchAdapters() {
+    fetch('/get_usb_devices')
+        .then(response => response.json())
+        .then(data => {
+            const selectElement = document.getElementById('gps-adapters');
+            const optionsDiv = selectElement.querySelector('.options');
+            optionsDiv.innerHTML = ''; // Clear previous options
+
+            data.usb_devices.forEach(function(device) {
+    var deviceName = device.split(' ').slice(2).join(' '); // Extracts everything after the ID
+    var option = document.createElement('option');
+    option.value = device; // Assign the full device value
+    option.textContent = deviceName; // Display only the device name
+    usbDeviceList.appendChild(option);
+});
+
+
+
+            // Show options on click
+            selectElement.querySelector('.selected-option').addEventListener('click', () => {
+                optionsDiv.style.display = optionsDiv.style.display === 'none' ? 'block' : 'none';
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching adapters:', error);
+        });
+}
+
+function handleAdapterSelection() {
+    const buttonElement = document.getElementById('adapter-button');
+    const selectElement = document.getElementById('gps-adapters');
+    
+    // If button says "Select Adapter", activate the selected adapter
+    if (buttonElement.textContent === 'Select Adapter') {
+        activateAdapter();
+    } else { // If button says "Change Adapter", reset the cycle
+        selectElement.value = '';
+        document.getElementById('current-gps-device').innerText = 'GPS Logging Device: None';
+        buttonElement.textContent = 'Select Adapter';
+    }
+}
+
+function activateAdapter() {
+    const selectElement = document.getElementById('gps-adapters');
+    const selectedAdapter = selectElement.value;
+    
+    // Send selected adapter to backend
+    fetch('/activate_gps_device', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ adapter: selectedID })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            document.getElementById('current-gps-device').innerText = `GPS Logging Device: ${selectedAdapter}`;
+            document.getElementById('adapter-button').textContent = 'Change Adapter';
+        } else {
+            alert('Failed to activate adapter. Please try again.');
+        }
+    })
+    .catch(error => {
+        console.error('Error activating adapter:', error);
+        alert('An error occurred while activating the adapter. Please try again later.');
+    });
+}
+
+// Function to fetch available GPS devices and populate the dropdown
+function fetchGPSDevices() {
+    fetch('/get_usb_devices')
+    .then(response => response.json())
+    .then(data => {
+        const selector = document.getElementById('gps-device-selector');
+        data.gps_devices.forEach(device => {
+            const option = document.createElement('option');
+            option.value = device; // You may need to extract a specific value here
+            option.textContent = device;
+            selector.appendChild(option);
+        });
+    })
+    .catch(error => {
+        console.error('Error fetching GPS devices:', error);
+    });
+}
+
+// Call the function when the page loads
+fetchGPSDevices();
+// Variable to track if adapters have been loaded
+let adaptersLoaded = false;
+
+function showAdapters() {
+    const selectElement = document.getElementById('gps-adapters');
+    
+    // If adapters have not been loaded, fetch them
+    if (!adaptersLoaded) {
+        fetch('/get_usb_devices')
+            .then(response => response.json())
+            .then(data => {
+                const adapters = data.adapters;
+                selectElement.innerHTML = ''; // Clear previous options
+
+                // Add an option for each adapter
+                adapters.forEach(adapter => {
+                    const option = document.createElement('option');
+                    option.value = adapter;
+                    option.text = adapter;
+                    selectElement.appendChild(option);
+                });
+
+                // Mark adapters as loaded
+                adaptersLoaded = true;
+            });
+    }
+
+    // Toggle the dropdown's visibility
+    selectElement.style.display = selectElement.style.display === 'none' ? 'block' : 'none';
+}
+
+function SelectAdapter() {
+    const selectElement = document.getElementById('gps-adapters');
+    const selectedAdapter = selectElement.value;
+
+    // Send the selected adapter to the backend
+    fetch('/activate_gps_device', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ adapter: selectedID })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('Adapter activated successfully!');
+            // You can update the UI here to reflect the change, e.g., update the current GPS device label
+            document.getElementById('current-gps-device').innerText = `Current GPS Device: ${selectedAdapter}`;
+        } else {
+            alert('Failed to activate adapter. Please try again.');
+        }
+        document.getElementById('adapter-modal').style.display = 'none';
+
+    })
+    .catch(error => {
+        console.error('Error activating adapter:', error);
+        alert('An error occurred while activating the adapter. Please try again later.');
+    });
+
+    // Hide the dropdown after selection
+    selectElement.style.display = 'none';
+    document.getElementById('adapter-modal').style.display = 'none';
+
+}
+
+function showScanNavigator() {
+  document.getElementById('scan-navigator').style.display = 'block';
+}
+
+function hideScanNavigator() {
+  document.getElementById('scan-navigator').style.display = 'none';
+}
+function updateScanInstruction(distanceToMove) {
+  var instructionElement = document.getElementById('scan-instruction');
+  instructionElement.textContent = "Please Move " + distanceToMove.toFixed(0) + " Ft for Next Scan! <3";
+}
+// Function to check internet connection
+function isOnline() {
+  return window.navigator.onLine;
+}
+
+// Function to check for unpopulated data (simplified example)
+function hasUnpopulatedData() {
+  // TODO: Implement logic to check if there's unpopulated data saved offline
+  return true; // Example return value
+}
+
+// Function to prompt user for population sequence
+function promptPopulationSequence() {
+  if (isOnline() && hasUnpopulatedData()) {
+    var userResponse = window.confirm("There is unpopulated data available. Would you like to start the population sequence?");
+    if (userResponse) {
+      // TODO: Start the population sequence, show progress bar, etc.
+    } else {
+      // User chose to postpone, do nothing or save state as needed
+    }
+  }
+}
+
+</script>
+
+</body>
+</html>
