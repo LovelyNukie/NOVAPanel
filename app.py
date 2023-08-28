@@ -14,6 +14,7 @@ from pywifi import PyWiFi, const
 import csv
 from math import sin, cos, sqrt, atan2, radians
 # ON HOLD gpsd.connect()
+
 if os.geteuid() != 0:
     exit("You need to have root privileges to run this script.\nPlease try again, this time using 'sudo'. Exiting.")
 # Define the mapping function
@@ -197,13 +198,17 @@ def collect_data():
    #     security = map_security_level(result.akm[0].value) if result.akm else 'Unknown'
    #     networks.append({
    #         'ssid': result.ssid,
-     #       'security': security,
-    #        'signal_strength': result.signal, # Signal quality
-    #        'latitude': gps_data['latitude'],
+       #     'security': security,
+      #      'signal_strength': result.signal, # Signal quality
+     #       'latitude': gps_data['latitude'],
     #        'longitude': gps_data['longitude']
     #    })
 
-    #return networks
+    return networks
+@app.route('/get_strongest_ssids', methods=['GET'])
+def get_strongest_ssids():
+    strongest_ssids = ScanNetworks.get_top_n_strongest_ssids()
+    return jsonify({'strongest_ssids': strongest_ssids})
 
 
 def save_collected_data(networks):
@@ -281,7 +286,7 @@ def scan_and_update():
     try:
         all_time_df = pd.read_csv(all_time_csv_path)
     except FileNotFoundError:
-        all_time_df = pd.DataFrame(columns=['SSID', 'Security'])
+        all_time_df = pd.DataFrame(columns=['SSID', 'Security', 'Security Strength'])
     
     # Concatenating old and new DataFrames
     combined_df = pd.concat([all_time_df, local_range_df], ignore_index=True)

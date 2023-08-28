@@ -76,6 +76,7 @@
     </style>
 </head>
 <body>
+    
     <div class="header">
         <img src="/static/logo.png" alt="Logo" class="header-logo"> <!-- Path to the logo -->
         <nav>
@@ -101,11 +102,19 @@
             <div class="panel-text"><!-- Textual representation here --></div>
             <div class="panel-filter"><!-- Filtering options here --></div>
         </div>
-    </body>
-    </html>
+        <div class="panel">
+            <h2 class="panel-title">Strongest SSIDs</h2>
+            <div class="panel-chart"><canvas id="strongestSsidsChart"></canvas></div>
+            <div class="panel-key"><!-- Color key here --></div>
+            <div class="panel-text"><!-- Textual representation here --></div>
+            <div class="panel-filter"><!-- Filtering options here --></div>
+        </div>
+        
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@3.5.1"></script>
     
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Including the Chart.js library -->
-<script>
+        <script>
+           document.addEventListener("DOMContentLoaded", function() {
+    
     // Function to create a security pie chart
     function createSecurityChart(canvasId, data) {
         var ctx = document.getElementById(canvasId).getContext('2d');
@@ -113,7 +122,6 @@
             type: 'pie',
             data: {
                 labels: ['None (Open Network)', 'WEP (Insecure)', 'WPA (Outdated Password Protected)', 'WPA2 (Secure)', 'WPA3 (Extremely Secure)', 'Unknown'],
-
                 datasets: [{
                     data: data,
                     backgroundColor: ['red', 'orange', 'yellow', 'green', 'blue', 'purple']
@@ -121,28 +129,84 @@
             }
         });
     }
-    
-        // Create charts for in-range and all-time data
-        createSecurityChart('inRangeSecurityChart', inRangeData);
-        createSecurityChart('allTimeSecurityChart', allTimeData);
-        
-        // TODO: Add color key, textual representation, filtering options, and other functionalities
-    </script>
-    
-    <script>
-        function fetchStats() {
-    fetch('/get_stats')
+    // Function to create a bar chart
+function createBarChart(canvasId, labels, values, securityTypes) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    const myBarChart = new Chart(ctx, {
+
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Signal Strength',
+                data: values,
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    min: -100,
+                    max: 0
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const security = securityTypes[context.dataIndex];
+                            return `${label} (Security: ${security})`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+   // Function to fetch strongest SSIDs
+function fetchStrongestSSIDs() {
+    fetch('/get_strongest_ssids')
         .then(response => response.json())
         .then(data => {
-            // Assuming the server returns a JSON object with 'local_range_stats' and 'all_time_stats' properties
-            createSecurityChart('inRangeSecurityChart', data.local_range_stats);
-            createSecurityChart('allTimeSecurityChart', data.all_time_stats);
+            const strongest_ssids = data.strongest_ssids;
+            const labels = strongest_ssids.map(network => network.SSID);
+            const values = strongest_ssids.map(network => network.Signal_Strength);
+            const securityTypes = strongest_ssids.map(network => network.Security);
+
+            // Using the new function here
+            createBarChart('strongestSsidsChart', labels, values, securityTypes);
         })
         .catch(error => console.error('Error:', error));
 }
 
-// Call the function when the page loads
-fetchStats();
 
-    </script>
-    
+    // Function to fetch stats
+    function fetchStats() {
+        fetch('/get_stats')
+            .then(response => response.json())
+            .then(data => {
+                console.log("Fetched stats:", data);  // Debugging: Log the fetched data
+
+                // Create the charts
+                createSecurityChart('inRangeSecurityChart', data.local_range_stats);
+                createSecurityChart('allTimeSecurityChart', data.all_time_stats);
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    // Call the functions when the page loads
+    fetchStrongestSSIDs();
+    fetchStats();
+});
+
+        </script>
+    </body>
+    </html>
+ 

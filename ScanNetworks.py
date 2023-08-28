@@ -1,28 +1,46 @@
 import pywifi
 import csv
 import subprocess
+from pywifi import PyWiFi, const  # Make sure to import 'const'
+import time  # Import the time module
+
+def get_top_n_strongest_ssids(n=5):
+    # Run the scan
+    networks = scan_networks()
+    
+    sorted_networks = sorted(networks, key=lambda x: x['Signal_Strength'], reverse=True)[:n]
+    
+    # Debugging print statement
+    print("Top N Strongest Networks: ", sorted_networks)
+    
+    return sorted_networks
+
 
 def scan_networks():
-    wifi = pywifi.PyWiFi()
+    wifi = PyWiFi()
     iface = wifi.interfaces()[0]
+
+    print("Initiating scan...")
+
+    # Start the scan
     iface.scan()
+    time.sleep(5)  # Wait for 5 seconds to allow the scan to complete
+
+    # Fetch and process the results
     scan_result = iface.scan_results()
 
     seen_ssids = set() # To keep track of SSIDs we've seen
     networks = []
 
     for network in scan_result:
-        ssid = network.ssid.strip() # Remove any leading/trailing whitespace
-
-        # Ignore blank or duplicated SSIDs
+        ssid = network.ssid.strip()
         if not ssid or ssid in seen_ssids:
             continue
-
-        # Add SSID to the set of seen SSIDs
         seen_ssids.add(ssid)
-
         security = network.akm[0] if network.akm else "None"
-        networks.append({'SSID': ssid, 'Security': security})
+        
+        # Add 'Signal_Strength' to the dictionary
+        networks.append({'SSID': ssid, 'Security': security, 'Signal_Strength': network.signal})
 
     return networks
 
