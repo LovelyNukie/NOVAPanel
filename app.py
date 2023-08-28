@@ -6,15 +6,14 @@ import subprocess
 import psutil
 import os
 import pandas as pd
-import gpsd
-import gps
+
 import time
 import netifaces
 from datetime import datetime
 from pywifi import PyWiFi, const
 import csv
 from math import sin, cos, sqrt, atan2, radians
-gpsd.connect()
+# ON HOLD gpsd.connect()
 if os.geteuid() != 0:
     exit("You need to have root privileges to run this script.\nPlease try again, this time using 'sudo'. Exiting.")
 # Define the mapping function
@@ -49,23 +48,23 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 app = Flask(__name__)
 
 @app.route('/initiate_scan', methods=['GET'])
-def initiate_scan():
+#def initiate_scan():
     # Get GPS data (existing function)
-    gps_data = get_gps_data().get_json()
+ #   gps_data = get_gps_data().get_json()
 
-    # TODO: Call the function to perform network scan (to be implemented)
-    networks = perform_network_scan()
+    ## TODO: Call the function to perform network scan (to be implemented)
+    #networks = perform_network_scan()
 
     # Create a timestamp for the scan
-    timestamp = datetime.now().isoformat()
+   # timestamp = datetime.now().isoformat()
 
-    # Write the data to CSV
-    with open('network_scans.csv', mode='a', newline='') as file:
-        writer = csv.writer(file)
-        for network in networks:
-            writer.writerow([timestamp, gps_data['latitude'], gps_data['longitude'], network['ssid'], network['signal_strength']])
+    ## Write the data to CSV
+    #with open('network_scans.csv', mode='a', newline='') as file:
+   #     writer = csv.writer(file)
+  #      for network in networks:
+ #           writer.writerow([timestamp, gps_data['latitude'], gps_data['longitude'], network['ssid'], network['signal_strength']])
 
-    return jsonify({'message': 'Scan initiated and data saved!', 'scan_data': networks})
+ #   return jsonify({'message': 'Scan initiated and data saved!', 'scan_data': networks})
 
 def perform_network_scan():
     wifi = PyWiFi()
@@ -145,13 +144,12 @@ def activate_and_test_device(device_id, device_name):
     return success if success else False
 
     return jsonify({'gps_devices': gps_devices})
-@app.route('/get_gps_data', methods=['GET'])
-def get_gps_data():
-    packet = gpsd.get_current()
-    return jsonify({
-        'latitude': packet.lat,
-        'longitude': packet.lon
-    })
+#@app.route('/get_gps_data', methods=['GET'])
+#def get_gps_data():
+ #   packet = gpsd.get_current()
+  #  return jsonify({
+   #     'latitude': packet.lat,
+    ##)
 @app.route('/activate_gps_adapter', methods=['POST'])
 def activate_gps_adapter():
     adapter = request.json['adapter']
@@ -181,31 +179,31 @@ def collect_data():
 
     return jsonify({'message': 'Data collected successfully!'})
 
-def perform_network_triangulation():
+#def perform_network_triangulation():
     # Create an object for scanning networks
-    wifi = PyWiFi()
-    iface = wifi.interfaces()[0] # Use the first available interface
-    
+ #   wifi = PyWiFi()
+  #  iface = wifi.interfaces()[0] # Use the first available interface
+   # 
     # Scan for networks
-    iface.scan()
-    scan_results = iface.scan_results()
+   # iface.scan()
+   # scan_results = iface.scan_results()
     
     # Get GPS data
-    gps_data = get_gps_data().get_json()
+   # gps_data = get_gps_data().get_json()
     
     # Extract SSID, security level, signal strength, and GPS coordinates
-    networks = []
-    for result in scan_results:
-        security = map_security_level(result.akm[0].value) if result.akm else 'Unknown'
-        networks.append({
-            'ssid': result.ssid,
-            'security': security,
-            'signal_strength': result.signal, # Signal quality
-            'latitude': gps_data['latitude'],
-            'longitude': gps_data['longitude']
-        })
+   # networks = []
+   # for result in scan_results:
+   #     security = map_security_level(result.akm[0].value) if result.akm else 'Unknown'
+   #     networks.append({
+   #         'ssid': result.ssid,
+     #       'security': security,
+    #        'signal_strength': result.signal, # Signal quality
+    #        'latitude': gps_data['latitude'],
+    #        'longitude': gps_data['longitude']
+    #    })
 
-    return networks
+    #return networks
 
 
 def save_collected_data(networks):
